@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import {
   Plus, Search, Eye, Trash2,
   FolderOpen, FileClock, CheckCircle2,
-  MailOpen, Send,
+  MailOpen, Send, ArrowRightLeft, MapPin,
 } from "lucide-react";
 import { useListDocuments, getListDocumentsQueryKey, useDeleteDocument } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -237,9 +237,22 @@ export default function Documents() {
                       {doc.creator_name || "—"}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${statusBadge(doc.current_status)}`}>
-                        {doc.current_status}
-                      </span>
+                      {doc.current_status.startsWith("ئاڕاستەکرا بۆ:") ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold border bg-orange-500/10 text-orange-700 border-orange-400/30 dark:text-orange-400">
+                            <ArrowRightLeft className="h-3 w-3 shrink-0" />
+                            لە هۆبەدایە
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-700 dark:text-orange-400">
+                            <MapPin className="h-2.5 w-2.5 shrink-0" />
+                            {doc.current_status.replace("ئاڕاستەکرا بۆ:", "").trim()}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${statusBadge(doc.current_status)}`}>
+                          {doc.current_status}
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">

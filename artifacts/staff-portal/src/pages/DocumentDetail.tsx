@@ -5,7 +5,7 @@ import {
   ArrowRight, FileText, History, Plus, Download,
   ClipboardList, Send, Eye, Loader2, AlertTriangle,
   RefreshCw, Upload, Stamp, CheckCircle2, Clock,
-  ArrowRightLeft, FileImage, FileType2, File, Tag, PenLine,
+  ArrowRightLeft, FileImage, FileType2, File, Tag, PenLine, MapPin,
 } from "lucide-react";
 import {
   useGetDocument, getGetDocumentQueryKey,
@@ -27,13 +27,15 @@ function statusConfig(status: string) {
   if (status === "نوێ")
     return { cls: "bg-violet-500/12 text-violet-700 border-violet-500/25", dot: "bg-violet-500" };
   if (status.startsWith("ئاڕاستەکرا بۆ"))
-    return { cls: "bg-amber-500/12 text-amber-700 border-amber-500/25", dot: "bg-amber-500" };
+    return { cls: "bg-orange-500/12 text-orange-700 border-orange-500/30", dot: "bg-orange-500" };
   if (status === "پەسەندکراوە")
     return { cls: "bg-emerald-500/12 text-emerald-700 border-emerald-500/25", dot: "bg-emerald-500" };
   if (status === "ئیمزاکرا")
     return { cls: "bg-teal-500/12 text-teal-700 border-teal-500/25", dot: "bg-teal-500" };
   if (status === "ڕەتکراوەتەوە")
     return { cls: "bg-rose-500/12 text-rose-700 border-rose-500/25", dot: "bg-rose-500" };
+  if (status === "کۆتاییهاتووە")
+    return { cls: "bg-slate-500/12 text-slate-600 border-slate-500/25", dot: "bg-slate-400" };
   return { cls: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground" };
 }
 
@@ -364,7 +366,7 @@ export default function DocumentDetail() {
                   </div>
                 )}
 
-                <div className="flex gap-2 justify-end pt-1">
+                <div className="flex gap-2 justify-end pt-1 flex-wrap">
                   <Button
                     variant="outline"
                     onClick={addNote}
@@ -386,6 +388,41 @@ export default function DocumentDetail() {
                     )}
                   </Button>
                 </div>
+
+                {/* ── Mark as completed ── */}
+                {document.current_status !== "کۆتاییهاتووە" && (
+                  <div className="border-t border-border/40 pt-4 mt-2">
+                    <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-950/20 px-3.5 py-3 mb-3 text-xs text-emerald-700 dark:text-emerald-400" style={ku}>
+                      <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      <span>کاتێک نوسراوەکە هەموو ئیشەکانی تەواو بوو و گەڕایەوە هۆبەی دەرکردە و وەرگرتە، ئەمەی خوارەوە بکە.</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        updateDocMutation.mutate(
+                          { id: documentId, data: { current_status: "کۆتاییهاتووە" } },
+                          {
+                            onSuccess: () => {
+                              toast({ title: "نوسراوەکە تەواوبوو بە سەرکەوتوویی تۆمارکرا." });
+                              refetchDoc(); refetchLogs();
+                            },
+                            onError: (err: any) => toast({ title: "هەڵە", description: err.message, variant: "destructive" }),
+                          }
+                        );
+                      }}
+                      disabled={isPending}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl h-9 border-emerald-400/50 text-emerald-700 hover:bg-emerald-500/10 hover:border-emerald-500 dark:text-emerald-400"
+                      style={ku}
+                    >
+                      {updateDocMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                      نوسراوەکە تەواوبوو — گەڕایەوە هۆبەکان
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
