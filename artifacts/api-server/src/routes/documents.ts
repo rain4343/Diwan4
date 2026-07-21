@@ -217,7 +217,7 @@ async function stampImageFile(opts: {
     }
     if (cur && textLines.length < 5) textLines.push(cur);
   }
-  textLines.push("بەروار:");
+  textLines.push("Date:");
   textLines.push(dateVal);
 
   const sigExists = !!(sigAbsPath && fs.existsSync(sigAbsPath));
@@ -323,9 +323,7 @@ async function createStampCoverPdf(opts: {
   let y = H - 80;
 
   const d = date;
-  const dateStr = toKurdishNumerals(
-    `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`
-  );
+  const dateStr = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 
   // Info rows
   const rows: [string, string][] = [
@@ -366,7 +364,7 @@ async function createStampCoverPdf(opts: {
   }
 
   // Date
-  page.drawText("بەروار:", { x: W - 40, y, font: boldFont, size: FS, color: GREEN });
+  page.drawText("Date:", { x: W - 40, y, font: boldFont, size: FS, color: GREEN });
   y -= LINE_H;
   page.drawText(dateStr, { x: W - 40, y, font: boldFont, size: FS, color: DARK });
   y -= LINE_H + 24;
@@ -472,11 +470,9 @@ async function embedForwardStamp(opts: {
   const WRAP_W = placeOnExistingPage ? pageW * 0.4 : pageW - 80;
   const GREEN  = rgb(0.02, 0.50, 0.12);
 
-  // ── Kurdish date — nicely formatted with label ────────────────────────
+  // ── Date — formatted in English ───────────────────────────────────────
   const d = date;
-  const dateStr = toKurdishNumerals(
-    `بەروار: ${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`
-  );
+  const dateStr = `Date: ${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 
   // ── Wrap notes into lines ─────────────────────────────────────────────
   const MAX_LINES = 8;
@@ -544,13 +540,9 @@ async function embedForwardStamp(opts: {
 
   curY -= 4;
 
-  // Draw label and date value as separate drawText calls to avoid bidi mixing
-  // (mixing RTL Arabic label with numbers in one string causes square-bracket
-  // artefacts and mis-measurement in pdf-lib).
-  const dateLabel = "بەروار:";
-  const dateValue = toKurdishNumerals(
-    `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`
-  );
+  // Draw label and date value as separate drawText calls to avoid bidi mixing.
+  const dateLabel = "Date:";
+  const dateValue = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 
   stampPage.drawText(dateLabel, {
     x: stampOriginX,
@@ -1122,10 +1114,8 @@ async function embedSignElements(opts: SignElementOpts): Promise<Uint8Array> {
     const d = date;
     // Split into two separate drawText calls to avoid RTL/LTR bidi mixing
     // artefacts (square brackets and mis-measured width) in pdf-lib.
-    const dateLabel = "بەروار:";
-    const dateValue = toKurdishNumerals(
-      `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`
-    );
+    const dateLabel = "Date:";
+    const dateValue = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
     let dxPt: number, dyPt: number;
     if (datePx) {
       const c = toPageCoords(datePx.x, datePx.y);
