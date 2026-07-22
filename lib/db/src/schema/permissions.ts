@@ -2,6 +2,7 @@ import { pgTable, serial, integer, varchar, text, timestamp, pgEnum } from "driz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { rolesTable } from "./roles";
+import { usersTable } from "./users";
 
 export const permissionModuleEnum = pgEnum("permission_module", [
   "documents",
@@ -37,8 +38,18 @@ export const rolePermissionsTable = pgTable("role_permissions", {
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Direct user-level permissions (override / supplement role permissions)
+export const userPermissionsTable = pgTable("user_permissions", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  permission_id: integer("permission_id").notNull().references(() => permissionsTable.id, { onDelete: "cascade" }),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const insertPermissionSchema = createInsertSchema(permissionsTable).omit({ id: true, created_at: true });
 export const insertRolePermissionSchema = createInsertSchema(rolePermissionsTable).omit({ id: true, created_at: true });
+export const insertUserPermissionSchema = createInsertSchema(userPermissionsTable).omit({ id: true, created_at: true });
 export type InsertPermission = z.infer<typeof insertPermissionSchema>;
 export type Permission = typeof permissionsTable.$inferSelect;
 export type RolePermission = typeof rolePermissionsTable.$inferSelect;
+export type UserPermission = typeof userPermissionsTable.$inferSelect;

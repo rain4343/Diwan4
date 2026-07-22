@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, rolesTable, roleUserTable, rolePermissionsTable, permissionsTable } from "@workspace/db/schema";
+import { usersTable, rolesTable, roleUserTable, rolePermissionsTable, permissionsTable, userPermissionsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
 const router = Router();
@@ -16,13 +16,18 @@ export async function getUserRoleNames(userId: number): Promise<string[]> {
 }
 
 export async function getUserPermissions(userId: number): Promise<string[]> {
-  const rows = await db
-    .select({ name: permissionsTable.name })
-    .from(roleUserTable)
-    .innerJoin(rolePermissionsTable, eq(roleUserTable.role_id, rolePermissionsTable.role_id))
-    .innerJoin(permissionsTable, eq(rolePermissionsTable.permission_id, permissionsTable.id))
-    .where(eq(roleUserTable.user_id, userId));
-  return [...new Set(rows.map((r) => r.name))];
+  const [rolePerms, directPerms] = await Promise.all([
+    db.select({ name: permissionsTable.name })
+      .from(roleUserTable)
+      .innerJoin(rolePermissionsTable, eq(roleUserTable.role_id, rolePermissionsTable.role_id))
+      .innerJoin(permissionsTable, eq(rolePermissionsTable.permission_id, permissionsTable.id))
+      .where(eq(roleUserTable.user_id, userId)),
+    db.select({ name: permissionsTable.name })
+      .from(userPermissionsTable)
+      .innerJoin(permissionsTable, eq(userPermissionsTable.permission_id, permissionsTable.id))
+      .where(eq(userPermissionsTable.user_id, userId)),
+  ]);
+  return [...new Set([...rolePerms, ...directPerms].map((r) => r.name))];
 }
 
 // POST /api/auth/login

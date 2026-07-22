@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { eq } from "drizzle-orm";
-import { db, permissionsTable, rolePermissionsTable, rolesTable } from "@workspace/db";
+import { db, permissionsTable, rolePermissionsTable, rolesTable, userPermissionsTable } from "@workspace/db";
 import { requireSystemAdmin } from "../middleware/requireAuth";
 import { logAudit } from "../lib/audit";
 
@@ -53,7 +53,6 @@ router.post("/permissions/roles/:roleId/assign", async (req, res) => {
 
   if (!Array.isArray(permission_ids)) return res.status(400).json({ error: "permission_ids پێویستە" });
 
-  // Remove existing and re-add
   await db.delete(rolePermissionsTable).where(eq(rolePermissionsTable.role_id, roleId));
   if (permission_ids.length > 0) {
     await db.insert(rolePermissionsTable).values(
@@ -62,6 +61,35 @@ router.post("/permissions/roles/:roleId/assign", async (req, res) => {
   }
 
   await logAudit(req, "ASSIGN_PERMISSIONS", "role", roleId, undefined, undefined, { permission_ids } as any);
+  return res.json({ success: true });
+});
+
+// GET /permissions/users/:userId — direct permissions assigned to this user
+router.get("/permissions/users/:userId", async (req, res) => {
+  const userId = Number(req.params.userId);
+  const rows = await db
+    .select({ permission: permissionsTable })
+    .from(userPermissionsTable)
+    .innerJoin(permissionsTable, eq(userPermissionsTable.permission_id, permissionsTable.id))
+    .where(eq(userPermissionsTable.user_id, userId));
+  return res.json(rows.map(r => r.permission));
+});
+
+// POST /permissions/users/:userId/assign — bulk-replace direct permissions for a user
+router.post("/permissions/users/:userId/assign", async (req, res) => {
+  const userId = Number(req.params.userId);
+  const { permission_ids } = req.body as { permission_ids: number[] };
+
+  if (!Array.isArray(permission_ids)) return res.status(400).json({ error: "permission_ids پێویستە" });
+
+  await db.delete(userPermissionsTable).where(eq(userPermissionsTable.user_id, userId));
+  if (permission_ids.length > 0) {
+    await db.insert(userPermissionsTable).values(
+      permission_ids.map(pid => ({ user_id: userId, permission_id: pid }))
+    );
+  }
+
+  await logAudit(req, "ASSIGN_USER_PERMISSIONS", "user", userId, undefined, undefined, { permission_ids } as any);
   return res.json({ success: true });
 });
 
