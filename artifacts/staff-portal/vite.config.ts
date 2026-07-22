@@ -3,6 +3,15 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
+// Windows 7 / Chrome 60+ compatibility:
+// Tailwind v4 emits oklch() and color-mix() which Chrome ≤110 doesn't support.
+// lightningcss with these targets automatically converts them to rgb() fallbacks.
+const browsersTargets = {
+  chrome: 60 << 16,   // Chrome 60+ (Win7 max is Chrome 109)
+  firefox: 78 << 16,  // Firefox 78 ESR+
+  edge: 79 << 16,     // EdgeHTML → Chromium 79+
+};
+
 const rawPort = process.env.PORT;
 const isBuild = process.env.NODE_ENV === 'production' || process.argv.includes('build');
 
@@ -16,6 +25,12 @@ const basePath = process.env.BASE_PATH ?? '/';
 
 export default defineConfig({
   base: basePath,
+  css: {
+    transformer: 'lightningcss',
+    lightningcss: {
+      targets: browsersTargets,
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
