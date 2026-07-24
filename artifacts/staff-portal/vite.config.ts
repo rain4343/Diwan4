@@ -15,7 +15,8 @@ const browsersTargets = {
 const rawPort = process.env.PORT;
 const isBuild = process.env.NODE_ENV === 'production' || process.argv.includes('build');
 
-const port = rawPort ? Number(rawPort) : 5173;
+// Port 5000 is mapped to external port 80 in the Replit preview pane
+const port = rawPort ? Number(rawPort) : 5000;
 
 if (!isBuild && rawPort && (Number.isNaN(port) || port <= 0)) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);

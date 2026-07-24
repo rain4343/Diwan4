@@ -5,7 +5,7 @@ import {
   useGetRoleBreakdown, getGetRoleBreakdownQueryKey,
   useGetRecentStaff, getGetRecentStaffQueryKey,
 } from "@workspace/api-client-react";
-import { Users, Building2, Shield, ArrowLeft, CalendarDays, Activity } from "lucide-react";
+import { Users, Building2, Shield, CalendarDays, TrendingUp, Activity } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip,
   ResponsiveContainer, Cell, PieChart, Pie, Legend,
@@ -13,67 +13,115 @@ import {
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { useAuth } from "@/lib/auth";
+import { RobotMascot } from "@/components/robots/RobotMascot";
 
 const ku: React.CSSProperties = { fontFamily: "'Noto Kufi Arabic', sans-serif" };
 
-const CHART_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+const CHART_COLORS = ["#60a5fa", "#34d399", "#fbbf24", "#f87171", "#a78bfa", "#22d3ee"];
 
-
+/* ── Stat Card ── */
 function StatCard({
-  label, sublabel, value, loading, icon: Icon, gradient, iconBg, iconColor,
+  label, sublabel, value, loading, icon: Icon, accentColor, glowColor, delay = 0,
 }: {
   label: string; sublabel: string; value?: number | string; loading?: boolean;
-  icon: any; gradient: string; iconBg: string; iconColor: string;
+  icon: React.ElementType; accentColor: string; glowColor: string; delay?: number;
 }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 group ${gradient}`}>
-      {/* decorative ring */}
-      <div className="absolute -top-6 -left-6 w-24 h-24 rounded-full opacity-10 bg-white" />
-      <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full opacity-10 bg-white" />
+    <div
+      className="relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] cursor-default slide-up"
+      style={{
+        animationDelay: `${delay}ms`,
+        background: "linear-gradient(135deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        backdropFilter: "blur(12px)",
+        boxShadow: `0 0 0 1px rgba(255,255,255,0.03), 0 8px 32px rgba(0,0,0,0.3)`,
+      }}
+    >
+      {/* Background glow */}
+      <div
+        className="absolute -top-4 -right-4 w-24 h-24 rounded-full pointer-events-none"
+        style={{ background: glowColor, opacity: 0.15, filter: "blur(16px)" }}
+      />
+      {/* Bottom accent */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+        style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`, opacity: 0.4 }}
+      />
 
-      <div className="relative z-10 flex items-start justify-between">
+      <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-white/70 text-xs font-medium mb-1">{label}</p>
-          <div className="text-3xl font-bold text-white mb-1">
-            {loading ? <span className="opacity-40">—</span> : (value ?? "—")}
+          <p className="text-xs font-medium mb-1" style={{ ...ku, color: "rgba(148,163,184,0.7)" }}>
+            {label}
+          </p>
+          <div
+            className="text-3xl font-black mb-1"
+            style={{ color: accentColor, textShadow: `0 0 20px ${glowColor}` }}
+          >
+            {loading ? (
+              <span
+                className="inline-block w-16 h-8 rounded-lg animate-pulse"
+                style={{ background: "rgba(255,255,255,0.06)" }}
+              />
+            ) : (
+              value ?? "—"
+            )}
           </div>
-          <p className="text-white/60 text-[11px]">{sublabel}</p>
+          <p className="text-[11px]" style={{ ...ku, color: "rgba(100,116,139,0.9)" }}>
+            {sublabel}
+          </p>
         </div>
-        <div className={`rounded-xl p-2.5 ${iconBg}`}>
-          <Icon className={`h-5 w-5 ${iconColor}`} />
+        <div
+          className="rounded-xl p-2.5"
+          style={{
+            background: `${glowColor}22`,
+            border: `1px solid ${accentColor}33`,
+          }}
+        >
+          <Icon className="h-5 w-5" style={{ color: accentColor }} />
         </div>
       </div>
     </div>
   );
 }
 
-function SkeletonRow() {
+/* ── Recent Staff Avatar ── */
+function InitialAvatar({ name }: { name: string }) {
+  const initials = name.trim().split(" ").slice(0, 2).map((w) => w[0]).join("");
+  const colors = [
+    ["#2563eb", "#4f46e5"], ["#059669", "#0d9488"],
+    ["#7c3aed", "#6d28d9"], ["#d97706", "#b45309"],
+    ["#db2777", "#be185d"], ["#0891b2", "#0369a1"],
+  ];
+  const [a, b] = colors[name.charCodeAt(0) % colors.length];
   return (
-    <tr>
-      {[1,2,3,4].map(i => (
-        <td key={i} className="px-5 py-3.5">
-          <div className="h-4 bg-muted/60 rounded-full animate-pulse" style={{ width: `${60 + i*10}%`, marginRight: "auto" }} />
-        </td>
-      ))}
-    </tr>
+    <span
+      className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white text-xs font-bold shrink-0"
+      style={{ background: `linear-gradient(135deg, ${a}, ${b})`, boxShadow: `0 0 10px ${a}55` }}
+    >
+      {initials || "?"}
+    </span>
   );
 }
 
-function InitialAvatar({ name }: { name: string }) {
-  const initials = name.trim().split(" ").slice(0, 2).map((w) => w[0]).join("");
-  const palettes = [
-    "from-blue-500 to-indigo-600",
-    "from-emerald-500 to-teal-600",
-    "from-violet-500 to-purple-600",
-    "from-amber-500 to-orange-600",
-    "from-rose-500 to-pink-600",
-    "from-cyan-500 to-sky-600",
-  ];
-  const idx = name.charCodeAt(0) % palettes.length;
+/* ── Custom Tooltip ── */
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br ${palettes[idx]} text-white text-xs font-bold shrink-0 shadow-sm`}>
-      {initials || "?"}
-    </span>
+    <div
+      className="rounded-xl px-3 py-2 text-sm"
+      style={{
+        background: "rgba(5,15,35,0.95)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        backdropFilter: "blur(12px)",
+        fontFamily: "'Noto Kufi Arabic', sans-serif",
+        color: "white",
+      }}
+    >
+      <p className="font-semibold">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <p key={i} style={{ color: p.color }}>{p.value}</p>
+      ))}
+    </div>
   );
 }
 
@@ -86,236 +134,342 @@ export default function Dashboard() {
   const { data: roleBreakdown, isLoading: loadingRole } = useGetRoleBreakdown({ query: { queryKey: getGetRoleBreakdownQueryKey() } });
   const { data: recentStaff, isLoading: loadingRecent } = useGetRecentStaff({ query: { queryKey: getGetRecentStaffQueryKey() } });
 
+  const greeting = (() => {
+    const h = today.getHours();
+    if (h < 12) return "بەیانی باش";
+    if (h < 17) return "ڕۆژی باش";
+    return "ئێوارەی باش";
+  })();
+
   return (
     <div className="space-y-6" data-testid="page-dashboard" style={ku}>
 
-      {/* ── Hero Banner ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-bl from-indigo-600 via-blue-600 to-blue-700 p-6 shadow-lg">
-        {/* decorative blobs */}
-        <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-48 h-48 rounded-full bg-white/5 translate-x-1/3 translate-y-1/3" />
-        <div className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full bg-indigo-500/20 -translate-y-1/2" />
+      {/* ══ HERO BANNER ══ */}
+      <div
+        className="relative overflow-hidden rounded-2xl p-6 slide-up"
+        style={{
+          background: "linear-gradient(135deg, rgba(10,20,50,0.97) 0%, rgba(15,30,70,0.97) 100%)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          boxShadow: "0 0 60px rgba(59,130,246,0.08), 0 20px 40px rgba(0,0,0,0.4)",
+        }}
+      >
+        {/* Mesh grid */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.025]"
+          style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,0.8) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.8) 1px,transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+        {/* Radial glow top-left */}
+        <div className="absolute top-0 right-0 w-80 h-80 pointer-events-none"
+          style={{ background: "radial-gradient(circle at top right, rgba(59,130,246,0.12) 0%, transparent 70%)" }} />
+        {/* Radial glow bottom */}
+        <div className="absolute bottom-0 left-0 w-60 h-60 pointer-events-none"
+          style={{ background: "radial-gradient(circle at bottom left, rgba(139,92,246,0.08) 0%, transparent 70%)" }} />
 
-        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Activity className="h-4 w-4 text-blue-200" />
-              <span className="text-blue-200 text-xs font-medium">E-Diwan</span>
+        <div className="relative flex flex-col lg:flex-row items-center gap-6">
+          {/* Left: Text */}
+          <div className="flex-1 text-right">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-3"
+              style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.2)" }}>
+              <Activity className="h-3 w-3 text-blue-400" />
+              <span className="text-xs text-blue-400 font-medium" style={ku}>سیستەمی E-Diwan</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
-              بەخێربێیت،{" "}
-              <span className="text-blue-200">{user?.full_name || user?.username}</span>
+
+            <h1 className="text-2xl lg:text-3xl font-black text-white mb-1" style={ku}>
+              {greeting}،
             </h1>
-            <p className="text-blue-300 text-sm mt-1.5">داشبۆردی سەرەکی — دەرفەتی باشی هەیە!</p>
+            <h2 className="text-xl font-extrabold mb-3" style={{ ...ku, color: "#60a5fa" }}>
+              {user?.full_name || user?.username} 👋
+            </h2>
+            <p className="text-sm text-white/50 mb-4" style={ku}>
+              {format(today, "EEEE, dd MMMM yyyy")}
+            </p>
+
+            <div className="flex items-center gap-3 justify-end flex-wrap">
+              <Link href="/staff">
+                <button
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
+                  style={{
+                    background: "linear-gradient(135deg,#2563eb,#1d4ed8)",
+                    boxShadow: "0 0 20px rgba(59,130,246,0.35)",
+                    fontFamily: "'Noto Kufi Arabic',sans-serif",
+                  }}
+                >
+                  فەرمانبەران →
+                </button>
+              </Link>
+              <Link href="/documents">
+                <button
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    color: "white",
+                    fontFamily: "'Noto Kufi Arabic',sans-serif",
+                  }}
+                >
+                  نوسراوەکان
+                </button>
+              </Link>
+            </div>
           </div>
 
-          <div className="flex-shrink-0 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-4 py-3 text-right">
-            <div className="flex items-center gap-2 text-blue-200 mb-1">
-              <CalendarDays className="h-3.5 w-3.5" />
-              <span className="text-[11px]">ئەمڕۆ</span>
-            </div>
-            <p className="text-white font-semibold text-sm">{format(today, "EEEE")}</p>
-            <p className="text-blue-200 text-xs">{format(today, "d MMMM yyyy")}</p>
+          {/* Right: Robot */}
+          <div className="shrink-0 relative hidden md:block">
+            <div
+              className="absolute inset-0 rounded-full pointer-events-none"
+              style={{ background: "radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)", filter: "blur(20px)" }}
+            />
+            <RobotMascot variant="dashboard" size="lg" animate />
           </div>
         </div>
       </div>
 
-      {/* ── Stat Cards (3 cards, no super-admin) ── */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* ══ STAT CARDS ══ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="کۆی فەرمانبەران"
-          sublabel="فەرمانبەری تۆمارکراو"
-          value={summary?.total_staff}
-          loading={loadingSummary}
-          icon={Users}
-          gradient="bg-gradient-to-br from-blue-500 to-indigo-600"
-          iconBg="bg-white/20"
-          iconColor="text-white"
+          label="کۆی فەرمانبەران" sublabel="فەرمانبەری خزمەتگزار"
+          value={summary?.total_staff} loading={loadingSummary}
+          icon={Users} accentColor="#60a5fa" glowColor="rgba(59,130,246,0.6)" delay={0}
         />
         <StatCard
-          label="هۆبەکان"
-          sublabel="هۆبەی چالاک"
-          value={summary?.total_departments}
-          loading={loadingSummary}
-          icon={Building2}
-          gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
-          iconBg="bg-white/20"
-          iconColor="text-white"
+          label="هۆبەکان" sublabel="بەشی خزمەت"
+          value={summary?.total_departments} loading={loadingSummary}
+          icon={Building2} accentColor="#34d399" glowColor="rgba(16,185,129,0.6)" delay={60}
         />
         <StatCard
-          label="ڕۆڵەکان"
-          sublabel="ئاستی دەسەڵات"
-          value={summary?.total_roles}
-          loading={loadingSummary}
-          icon={Shield}
-          gradient="bg-gradient-to-br from-violet-500 to-purple-600"
-          iconBg="bg-white/20"
-          iconColor="text-white"
+          label="ئەرکەکان" sublabel="جۆری دەسەڵات"
+          value={summary?.total_roles} loading={loadingSummary}
+          icon={Shield} accentColor="#a78bfa" glowColor="rgba(139,92,246,0.6)" delay={120}
+        />
+        <StatCard
+          label="کارمەندی نوێ" sublabel="ئەم مانگە"
+          value={summary?.new_this_month} loading={loadingSummary}
+          icon={TrendingUp} accentColor="#fbbf24" glowColor="rgba(245,158,11,0.6)" delay={180}
         />
       </div>
 
-      {/* ── Charts ── */}
-      <div className="grid gap-5 md:grid-cols-2">
-
+      {/* ══ CHARTS ROW ══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Department Bar Chart */}
-        <div className="bg-card border border-border/60 rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-5 pt-5 pb-3 flex items-center gap-3 border-b border-border/40">
-            <div className="rounded-lg bg-indigo-500/10 p-1.5">
-              <Building2 className="h-4 w-4 text-indigo-500" />
+        <div
+          className="rounded-2xl p-5 slide-up"
+          style={{
+            animationDelay: "200ms",
+            background: "rgba(255,255,255,0.035)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div className="flex items-center gap-3 mb-4" dir="rtl">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.2)" }}
+            >
+              <Building2 className="h-4 w-4" style={{ color: "#34d399" }} />
             </div>
             <div>
-              <h2 className="font-semibold text-sm text-foreground">فەرمانبەر بەپێی هۆبە</h2>
-              <p className="text-[11px] text-muted-foreground">دابەشبوونی فەرمانبەران لە نێوان هۆبەکاندا</p>
+              <h3 className="text-sm font-bold text-white" style={ku}>داڕشتنی هۆبەکان</h3>
+              <p className="text-[11px]" style={{ ...ku, color: "rgba(100,116,139,0.8)" }}>فەرمانبەر بە هۆبە</p>
             </div>
           </div>
-          <div className="h-[260px] px-2 py-3">
-            {loadingDept ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs">چاوەڕێ بکە...</span>
-                </div>
-              </div>
-            ) : !deptBreakdown?.length ? (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">داتایەک نەدۆزرایەوە.</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={deptBreakdown} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="department_name" tickLine={false} axisLine={false} fontSize={10}
-                    tickMargin={8} tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis tickLine={false} axisLine={false} fontSize={11} allowDecimals={false}
-                    tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                  <RechartsTooltip
-                    cursor={{ fill: "hsl(var(--muted)/0.4)", radius: 6 }}
-                    contentStyle={{ borderRadius: "10px", border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontFamily: "'Noto Kufi Arabic', sans-serif", fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
-                    itemStyle={{ color: "hsl(var(--foreground))" }}
-                  />
-                  <Bar dataKey="staff_count" radius={[8, 8, 0, 0]} maxBarSize={44}>
-                    {deptBreakdown.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+          {loadingDept ? (
+            <div className="h-52 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+            </div>
+          ) : !deptBreakdown?.length ? (
+            <div className="h-52 flex items-center justify-center text-sm" style={{ color: "rgba(100,116,139,0.7)", fontFamily: "'Noto Kufi Arabic',sans-serif" }}>
+              زانیاری نییە
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={deptBreakdown} barSize={14} margin={{ top: 4, right: 4, left: -20, bottom: 4 }}>
+                <XAxis
+                  dataKey="department_name"
+                  tick={{ fontSize: 10, fill: "rgba(148,163,184,0.7)", fontFamily: "'Noto Kufi Arabic',sans-serif" }}
+                  axisLine={false} tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "rgba(100,116,139,0.6)" }}
+                  axisLine={false} tickLine={false} allowDecimals={false}
+                />
+                <RechartsTooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                  {deptBreakdown.map((_: any, i: number) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Role Pie Chart */}
-        <div className="bg-card border border-border/60 rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-5 pt-5 pb-3 flex items-center gap-3 border-b border-border/40">
-            <div className="rounded-lg bg-violet-500/10 p-1.5">
-              <Shield className="h-4 w-4 text-violet-500" />
+        <div
+          className="rounded-2xl p-5 slide-up"
+          style={{
+            animationDelay: "260ms",
+            background: "rgba(255,255,255,0.035)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div className="flex items-center gap-3 mb-4" dir="rtl">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.2)" }}
+            >
+              <Shield className="h-4 w-4" style={{ color: "#a78bfa" }} />
             </div>
             <div>
-              <h2 className="font-semibold text-sm text-foreground">فەرمانبەر بەپێی ڕۆڵ</h2>
-              <p className="text-[11px] text-muted-foreground">دابەشبوونی ڕۆڵەکان لە نێوان فەرمانبەراندا</p>
+              <h3 className="text-sm font-bold text-white" style={ku}>داڕشتنی ئەرکەکان</h3>
+              <p className="text-[11px]" style={{ ...ku, color: "rgba(100,116,139,0.8)" }}>فەرمانبەر بە ئەرک</p>
             </div>
           </div>
-          <div className="h-[260px] py-3">
-            {loadingRole ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <div className="w-6 h-6 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs">چاوەڕێ بکە...</span>
-                </div>
-              </div>
-            ) : !roleBreakdown?.length ? (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">داتایەک نەدۆزرایەوە.</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={roleBreakdown} dataKey="staff_count" nameKey="role_name"
-                    cx="50%" cy="45%" innerRadius={58} outerRadius={92} paddingAngle={4}>
-                    {roleBreakdown.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Legend iconType="circle" iconSize={8}
-                    wrapperStyle={{ fontFamily: "'Noto Kufi Arabic', sans-serif", fontSize: 12 }} />
-                  <RechartsTooltip
-                    contentStyle={{ borderRadius: "10px", border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontFamily: "'Noto Kufi Arabic', sans-serif", fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+          {loadingRole ? (
+            <div className="h-52 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
+            </div>
+          ) : !roleBreakdown?.length ? (
+            <div className="h-52 flex items-center justify-center text-sm" style={{ color: "rgba(100,116,139,0.7)", fontFamily: "'Noto Kufi Arabic',sans-serif" }}>
+              زانیاری نییە
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={roleBreakdown}
+                  cx="50%" cy="50%"
+                  innerRadius={50} outerRadius={80}
+                  paddingAngle={3}
+                  dataKey="count"
+                  nameKey="role_name"
+                >
+                  {roleBreakdown.map((_: any, i: number) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
+                  ))}
+                </Pie>
+                <Legend
+                  formatter={(value) => (
+                    <span style={{ color: "rgba(148,163,184,0.8)", fontSize: 11, fontFamily: "'Noto Kufi Arabic',sans-serif" }}>
+                      {value}
+                    </span>
+                  )}
+                />
+                <RechartsTooltip content={<ChartTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
-      {/* ── Recent Staff Table ── */}
-      <div className="bg-card border border-border/60 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 flex items-center justify-between border-b border-border/40">
+      {/* ══ RECENT STAFF TABLE ══ */}
+      <div
+        className="rounded-2xl overflow-hidden slide-up"
+        style={{
+          animationDelay: "320ms",
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+          dir="rtl"
+        >
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-500/10 p-1.5">
-              <Users className="h-4 w-4 text-blue-500" />
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.2)" }}
+            >
+              <Users className="h-4 w-4 text-blue-400" />
             </div>
             <div>
-              <h2 className="font-semibold text-sm text-foreground">فەرمانبەرانی نوێ</h2>
-              <p className="text-[11px] text-muted-foreground">کۆتا فەرمانبەرانی زیادکراو</p>
+              <h3 className="text-sm font-bold text-white" style={ku}>نوێترین فەرمانبەران</h3>
+              <p className="text-[11px]" style={{ ...ku, color: "rgba(100,116,139,0.8)" }}>دوایین فەرمانبەرانی زیادکراو</p>
             </div>
           </div>
-          <Link
-            href="/staff"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-500/8 hover:bg-blue-500/15 px-3 py-1.5 rounded-lg transition-all duration-200"
-          >
-            بینینی هەمووی
-            <ArrowLeft className="h-3.5 w-3.5" />
+          <Link href="/staff">
+            <span className="text-xs font-medium cursor-pointer transition-colors hover:text-white" style={{ ...ku, color: "#60a5fa" }}>
+              هەموو ببینە ←
+            </span>
           </Link>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="data-table">
             <thead>
-              <tr className="bg-muted/30 text-muted-foreground text-xs border-b border-border/40">
-                <th className="px-5 py-3 font-medium text-right">فەرمانبەر</th>
-                <th className="px-5 py-3 font-medium text-right">ناوی بەکارهێنەر</th>
-                <th className="px-5 py-3 font-medium text-right">هۆبە</th>
-                <th className="px-5 py-3 font-medium text-right">بەرواری زیادکردن</th>
+              <tr>
+                <th style={ku}>ناو</th>
+                <th style={ku}>بەکارهێنەر</th>
+                <th style={ku}>هۆبە</th>
+                <th style={ku}>بەرواری</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/30">
+            <tbody>
               {loadingRecent ? (
-                <>
-                  <SkeletonRow />
-                  <SkeletonRow />
-                  <SkeletonRow />
-                </>
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i}>
+                    {[1, 2, 3, 4].map((j) => (
+                      <td key={j}>
+                        <div
+                          className="h-4 rounded-lg animate-pulse"
+                          style={{ background: "rgba(255,255,255,0.05)", width: `${50 + j * 10}%`, marginRight: "auto" }}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))
               ) : !recentStaff?.length ? (
                 <tr>
-                  <td colSpan={4} className="px-5 py-12 text-center text-muted-foreground text-sm">
-                    <div className="flex flex-col items-center gap-2">
-                      <Users className="h-8 w-8 opacity-20" />
-                      <span>هیچ فەرمانبەرێک نەدۆزرایەوە.</span>
+                  <td colSpan={4} style={{ textAlign: "center", padding: "48px 0" }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                      <Users style={{ width: 32, height: 32, opacity: 0.15, color: "white" }} />
+                      <span style={{ ...ku, color: "rgba(100,116,139,0.7)", fontSize: 14 }}>
+                        هیچ فەرمانبەرێک نەدۆزرایەوە
+                      </span>
                     </div>
                   </td>
                 </tr>
               ) : (
                 recentStaff.map((staff, idx) => (
-                  <tr
-                    key={staff.id}
-                    className="hover:bg-muted/20 transition-colors duration-150"
-                    style={{ animationDelay: `${idx * 40}ms` }}
-                  >
-                    <td className="px-5 py-3.5 text-right">
+                  <tr key={staff.id} style={{ animationDelay: `${idx * 40}ms` }}>
+                    <td>
                       <div className="flex items-center gap-2.5 justify-end">
-                        <div>
-                          <div className="font-medium text-foreground text-sm">{staff.full_name}</div>
-                          <div className="text-[11px] text-muted-foreground">{staff.email}</div>
+                        <div className="text-right">
+                          <div className="font-semibold text-white text-sm" style={ku}>{staff.full_name}</div>
+                          <div className="text-[11px]" style={{ color: "rgba(100,116,139,0.8)" }}>{staff.email}</div>
                         </div>
                         <InitialAvatar name={staff.full_name} />
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-muted-foreground text-right text-xs">
-                      <span className="font-mono bg-muted/50 px-2 py-0.5 rounded-md">@{staff.username}</span>
+                    <td>
+                      <span
+                        className="font-mono text-xs px-2 py-0.5 rounded-md"
+                        style={{ background: "rgba(255,255,255,0.05)", color: "rgba(148,163,184,0.8)" }}
+                      >
+                        @{staff.username}
+                      </span>
                     </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    <td>
+                      <span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium"
+                        style={{
+                          background: "rgba(52,211,153,0.1)",
+                          border: "1px solid rgba(52,211,153,0.2)",
+                          color: "#34d399",
+                          fontFamily: "'Noto Kufi Arabic',sans-serif",
+                        }}
+                      >
                         {staff.department_name || "بێ هۆبە"}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-muted-foreground text-right text-xs">
-                      <span className="inline-flex items-center gap-1">
+                    <td>
+                      <span className="flex items-center gap-1 justify-end text-xs" style={{ color: "rgba(100,116,139,0.8)" }}>
                         <CalendarDays className="h-3 w-3 opacity-50" />
                         {format(new Date(staff.created_at), "MMM d, yyyy")}
                       </span>
